@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
+#
+# TODO:
+# - validate IP addresses
+# - validate directory and location
+# - [DONE] fix argparse
 
 """ Nmap automated scan for a list of hosts"""
 """ Make my life easier when taking the OSCP """
 
+import argparse
 import os
 import sys
+import socket
 import subprocess
 from optparse import OptionParser
-
-scan_dir = '/root/OSCP/scans/'
-#scan_dir = '/tmp/OSCP/scans/'
-oscp_ips = '/root/OSCP/OSCP-IPS.txt'
 
 def create_dirs(ips, scan_dir):
     """ Create directory structure """
@@ -43,6 +46,15 @@ def udp_scan(hosts):
 
 
 if __name__ == '__main__':
-    create_dirs(oscp_ips, scan_dir)
-    tcp_scan(oscp_ips)
-    udp_scan(oscp_ips)
+    parser = argparse.ArgumentParser(description='Nmap wrapper for inital enumeration scanning')
+    parser.add_argument('--scan_dir', help='Directory to store scan results',
+            action="store", dest="scan_dir", type=argparse.FileType('r'),
+            required=True)
+    parser.add_argument('--ip_list', help='List of IP Addresses to scan',
+            action="store", dest="ips", type=str, required=True)
+
+    results = parser.parse_args()
+
+    create_dirs(results.ips, results.scan_dir)
+    tcp_scan(results.ips)
+    udp_scan(results.ips)
