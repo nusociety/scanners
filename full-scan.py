@@ -4,6 +4,7 @@
 # - validate IP addresses
 # - validate directory and location
 # - [DONE] fix argparse
+# - add command line argument for ctfrecon
 
 """ Nmap automated scan for a list of hosts"""
 """ Make my life easier when taking the OSCP """
@@ -58,7 +59,8 @@ if __name__ == '__main__':
     create_dirs(results.ips, results.scan_dir)
     tcp_scan(results.ips, results.scan_dir)
     udp_scan(results.ips, results.scan_dir)
-  
+ 
+    """parse, search, and create ctfrecon results in host directories"""
     parsedPathList = []
     with open(results.ips) as f:
         for hostIP in f.readlines():
