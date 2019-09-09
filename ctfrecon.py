@@ -116,30 +116,30 @@ def search_exploits_index(searchStr, csvIndex):    #search only the CSV index fo
                 indexResults.append(tmp)
     return indexResults
 
-def parse_nmap(xmlNmapPaths):   #TODO: make xmlNmapPath a list of paths and parse through all xml files in list
+def parse_nmap(xmlNmapPaths):
     parsedHosts = [] 
     x = 0
     for path in xmlNmapPaths:
         if os.path.isfile(path):
             nmap_data = NmapParser.parse_fromfile(path)
             for host in nmap_data.hosts:
-                parsedHosts.append(nmapParsedHost(host.address, host.mac, host.vendor)) #create class instance as object in array parsedHosts and initialize first 3 elements
+                parsedHosts.append(nmapParsedHost(host.address, host.mac, host.vendor)) #parsedHosts is a list of nmapParsedHost objects 
 
                 if(host.os_fingerprinted):
-                    host.osFingerprint = host.os_fingerprint                        #OS Fingerprint
+                    host.osFingerprint = host.os_fingerprint                            #OS Fingerprint
 
                  #OS Match Parse
                 OSmatches = host.os_match_probabilities()
                 for OSmatch in OSmatches:
-                    parsedHosts[x].addOSmatch(OSmatch.name)                         #OS Matches name 
+                    parsedHosts[x].addOSmatch(OSmatch.name)                             #OS Matches name 
                 #Services Parse
                 if host.services:
                     for s in host.services:
-                        parsedHosts[x].addServiceBanner(s.banner)                   #Service banner (product + version)
-                        parsedHosts[x].addServiceName(s.service)                    #Service name
-                        parsedHosts[x].addServiceFingerprint(s.servicefp)           #Service fingerprint
-                        parsedHosts[x].addServicePort(s.port)                       #Service port
-                        parsedHosts[x].addServiceState(s.state)                     #Service state(open/close)
+                        parsedHosts[x].addServiceBanner(s.banner)                       #Service banner (product + version)
+                        parsedHosts[x].addServiceName(s.service)                        #Service name
+                        parsedHosts[x].addServiceFingerprint(s.servicefp)               #Service fingerprint
+                        parsedHosts[x].addServicePort(s.port)                           #Service port
+                        parsedHosts[x].addServiceState(s.state)                         #Service state(open/close)
                 x += 1
     return parsedHosts 
 
@@ -147,7 +147,7 @@ def display_results(rList):
     select = 1
     x = 1 
 
-    while select != 0:
+    while True:
         for r in rList:
             print(f"\n\033[1;32;40m{r[SEARCHKEY]} | QUERY: {r[SEARCHQUERY]}")
             print("------------------------------------------------------")
@@ -159,21 +159,20 @@ def display_results(rList):
             print(f"  PLATFORM: \033[1;32;40m {r[PLATFORM]} \033[1;31;40m")
             print(f"  PORT: \033[1;32;40m {r[PORT]}")
             x = x + 1
-
         print("(0 to Exit)------------------->", end=' ')
-        select = int(input())
-
-        if select == 0:
-            return 0
-        elif select < x and select > -1:   #TODO: Need to fix error handling for other keyboard inputs besides integers.. like arrows and shit
-            if (os.path.isfile(SSPATH + rList[select - 1][FILE])) == True:
-                with open(SSPATH + rList[select - 1][FILE], 'r') as exploitFILE:
-                    textFile = exploitFILE.read()
-                    pydoc.pager(textFile)
-                    exploitFILE.close()
+        try:
+            select = int(input())
+        except ValueError:
+            continue
         else:
-            print("\nNo such index!\n")
-
+            if select == 0:
+                break
+            if select < x:
+                if (os.path.isfile(SSPATH + rList[select - 1][FILE])) == True:
+                    with open(SSPATH + rList[select - 1][FILE], 'r') as exploitFILE:
+                        textFile = exploitFILE.read()
+                        pydoc.pager(textFile)
+                        exploitFILE.close()
         x = 1
            
 def create_nmap_search_list(parsedHosts):   #create dictionary search list from nmapParsedHost object
