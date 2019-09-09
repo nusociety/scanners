@@ -13,6 +13,7 @@ import os
 import sys
 import socket
 import subprocess
+import ctfrecon
 from optparse import OptionParser
 
 def create_dirs(ips, scan_dir):
@@ -27,7 +28,7 @@ def create_dirs(ips, scan_dir):
                 print("Directory:", our_scan_dir, "already exists")
 
 
-def tcp_scan(hosts):
+def tcp_scan(hosts, scan_dir):
     """ Perform nmap TCP scan """
     with open(hosts) as f:
         for ip in f.readlines():
@@ -36,7 +37,7 @@ def tcp_scan(hosts):
                 ip.strip()])
 
 
-def udp_scan(hosts):
+def udp_scan(hosts, scan_dir):
     """ Perform nmap UDP scan """
     with open(hosts) as f:
         for ip in f.readlines():
@@ -48,13 +49,28 @@ def udp_scan(hosts):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Nmap wrapper for inital enumeration scanning')
     parser.add_argument('--scan_dir', help='Directory to store scan results',
-            action="store", dest="scan_dir", type=argparse.FileType('r'),
+            action="store", dest="scan_dir", type=str,
             required=True)
     parser.add_argument('--ip_list', help='List of IP Addresses to scan',
             action="store", dest="ips", type=str, required=True)
-
     results = parser.parse_args()
 
     create_dirs(results.ips, results.scan_dir)
-    tcp_scan(results.ips)
-    udp_scan(results.ips)
+    tcp_scan(results.ips, results.scan_dir)
+    udp_scan(results.ips, results.scan_dir)
+  
+    parsedPathList = []
+    with open(results.ips) as f:
+        for hostIP in f.readlines():
+            parsedPathList.append(results.scan_dir + hostIP.strip() + '/' + hostIP.strip() + "-tcp.xml")
+    f.close()
+
+    parsedHosts = ctfrecon.parse_nmap(parsedPathList)
+    searchDict = ctfrecon.create_nmap_search_list(parsedHosts)
+    results = ctfrecon.search_exploits(searchDict, ctfrecon.open_CSV(ctfrecon.SSPATH + 'files_exploits.csv'))
+    indexResults = ctfrecon.search_exploits_index(searchDict, ctfrecon.open_CSV(ctfrecon.SSPATH + 'files_exploits.csv'))
+    finalResults = ctfrecon.remove_duplicates(results, indexResults)
+    for path in parsedPathList:
+        ctfrecon.create_results_files(path, finalResults, parsedHosts, searchDict)
+
+
