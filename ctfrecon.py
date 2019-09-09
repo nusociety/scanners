@@ -192,7 +192,7 @@ def create_nmap_search_list(parsedHosts):   #create dictionary search list from 
                 bannerSearch = host.serviceBanners[x].split(" ")
                 bannerSearchList.append(bannerSearch[1] + " < " + bannerSearch[3])
                 bannerSearchList.append(bannerSearch[1] + " " + bannerSearch[3])
-                searchDict.update({"SERVICE MATCH: " + host.hostAddress + ":" + str(host.servicePorts[x]) : bannerSearchList})
+                searchDict.update({"SERVICE MATCH: ip:port[" + host.hostAddress + ":" + str(host.servicePorts[x]) + "]" : bannerSearchList})
                 bannerSearchList = []
     return searchDict
 
