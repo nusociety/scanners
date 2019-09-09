@@ -16,7 +16,7 @@ PORT = 7
 SEARCHKEY = 8
 SEARCHQUERY = 9
 
-SSPATH = '/usr/share/exploitdb/' #searchsploit root dir
+SSPATH = '/usr/share/exploitdb/' #exploitDB root dir
 #------------------OPTIONS----------------
 unixOptions = "d:i:x:"
 gnuOptions = ["deep=", "index=", "nmapXML="]
@@ -167,7 +167,7 @@ def display_results(rList):
         else:
             if select == 0:
                 break
-            if select < x:
+            if select < x and select > 0:
                 if (os.path.isfile(SSPATH + rList[select - 1][FILE])) == True:
                     with open(SSPATH + rList[select - 1][FILE], 'r') as exploitFILE:
                         textFile = exploitFILE.read()
