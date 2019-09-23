@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-import sys, os, getopt, pydoc, subprocess
+import sys, os, getopt, pydoc, subprocess, re
 from libnmap.parser import NmapParser
 
 #-------------CSV Identifiers--------------
@@ -179,18 +179,26 @@ def create_nmap_search_list(parsedHosts):   #create dictionary search list from 
     searchDict = {}
     bannerSearchList = []
     OSsearchList = []
+    serviceRegex = re.compile(r'product: (\w+) version: (\S+)')
+
     for host in parsedHosts:
         for x in range(len(host.OSmatches)):
-            OSsearchList.append(host.OSmatches[x].replace(" - ", " "))
+            OSsearchList.append(host.OSmatches[x].replace(" - ", " "))   #TODO:could use regex also, like services
             OSsearchList.append(host.OSmatches[x].replace("-", "<"))
             OSsearchList.append(host.OSmatches[x])
             searchDict.update({"OS MATCH: ip[" + host.hostAddress + "] " + " mac[" + host.hostMAC + "]" : OSsearchList})
             OSsearchList = []
         for x in range(len(host.serviceBanners)):
             if host.serviceBanners[x]:
-                bannerSearch = host.serviceBanners[x].split(" ")
-                bannerSearchList.append(bannerSearch[1] + " < " + bannerSearch[3])
-                bannerSearchList.append(bannerSearch[1] + " " + bannerSearch[3])
+                sMatch = serviceRegex.search(host.serviceBanners[x])
+
+                if sMatch:
+                    if sMatch.group(1) and sMatch.group(2):
+                        bannerSearchList.append(sMatch.group(1) + " < " + sMatch.group(2))
+                        bannerSearchList.append(sMatch.group(1) + " " + sMatch.group(2))
+                    else:
+                        bannerSearchList.append(sMatch.group(1))
+
                 searchDict.update({"SERVICE MATCH: ip:port[" + host.hostAddress + ":" + str(host.servicePorts[x]) + "]" : bannerSearchList})
                 bannerSearchList = []
     return searchDict
@@ -198,10 +206,11 @@ def create_nmap_search_list(parsedHosts):   #create dictionary search list from 
 def create_results_files(currentXMLpath, results, parsedHosts, searchDict):   #create output files for search results in host directory
     path = os.path.split(currentXMLpath)
     pathApart = currentXMLpath.split("/")
+
     os.makedirs(os.path.dirname(path[0] + "/ctfrecon/exploitDB-results"), exist_ok=True)
     with open(path[0] + "/ctfrecon/exploitDB-results", 'w') as resultsFILE:
         for host in parsedHosts:
-            if host.hostAddress == pathApart[len(pathApart) - 2]:
+            if host.hostAddress == pathApart[len(pathApart) - 2] or  __name__ == "__main__": #TODO: still a bug in the header info if multiple hosts exist in same scan.  only displaying first host header 
                 resultsFILE.write("Host: " + host.hostAddress + "\n")
                 resultsFILE.write("MAC Address: " + host.hostMAC + "\n")
                 resultsFILE.write("Vendor: " + host.hostVendor + "\n")
@@ -210,7 +219,7 @@ def create_results_files(currentXMLpath, results, parsedHosts, searchDict):   #c
                     resultsFILE.write(OSmatch + "  ")
 
                 for r in results:
-                    if r[SEARCHKEY].find(pathApart[len(pathApart) -2]) != -1:
+                    if r[SEARCHKEY].find(pathApart[len(pathApart) -2]) != -1 or __name__ == "__main__":
                         resultsFILE.write("\n\n" + r[SEARCHKEY] + " | QUERY: "  + r[SEARCHQUERY] + "\n")
                         resultsFILE.write("-----------------------------------------------------------\n")
                         resultsFILE.write("FILE: " + r[FILE] + "\n")
@@ -224,7 +233,7 @@ def create_results_files(currentXMLpath, results, parsedHosts, searchDict):   #c
 
         with open(path[0] + "/ctfrecon/.exploitDB_results_index.csv", 'w') as resultsIndexFILE:
             for r in results:
-                if r[SEARCHKEY].find(pathApart[len(pathApart) - 2]) != -1:
+                if r[SEARCHKEY].find(pathApart[len(pathApart) - 2]) != -1 or __name__ == "__main__":
                     rIndex = ",".join(r)
                     resultsIndexFILE.write(rIndex + "\n")
         resultsIndexFILE.close()
@@ -255,12 +264,12 @@ def check_len(someString):
 
 def remove_duplicates(results1, results2):
     #remove duplicate results
-    for x in range(len(results1)-1):
-        for y in range(len(results2)-1):
-            if results1[x] == results2[y]:
-                del results2[y]
-    for x in range(len(results2)-1):
-        results1.append(results2[x])
+    for x in range(len(results1)):
+        for y in range(len(results2)):
+            if results1[x-1] == results2[y-1]:
+                del results2[y-1]
+    for x in range(len(results2)):
+        results1.append(results2[x-1])
     return results1
 
 if __name__ == "__main__":
