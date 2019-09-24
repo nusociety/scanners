@@ -135,7 +135,7 @@ def parse_nmap(xmlNmapPaths):
                 #Services Parse
                 if host.services:
                     for s in host.services:
-                        parsedHosts[x].addServiceBanner(s.banner)                       #Service banner (product + version)
+                        parsedHosts[x].addServiceBanner(s.banner)                       #Service banner (product: Version:)
                         parsedHosts[x].addServiceName(s.service)                        #Service name
                         parsedHosts[x].addServiceFingerprint(s.servicefp)               #Service fingerprint
                         parsedHosts[x].addServicePort(s.port)                           #Service port
@@ -205,21 +205,26 @@ def create_nmap_search_list(parsedHosts):   #create dictionary search list from 
 
 def create_results_files(currentXMLpath, results, parsedHosts, searchDict):   #create output files for search results in host directory
     path = os.path.split(currentXMLpath)
-    pathApart = currentXMLpath.split("/")
+    pathApart = currentXMLpath.split("/")    #TODO: create a regex for this hacky list for testing
 
     os.makedirs(os.path.dirname(path[0] + "/ctfrecon/exploitDB-results"), exist_ok=True)
     with open(path[0] + "/ctfrecon/exploitDB-results", 'w') as resultsFILE:
         for host in parsedHosts:
-            if host.hostAddress == pathApart[len(pathApart) - 2] or  __name__ == "__main__": #TODO: still a bug in the header info if multiple hosts exist in same scan.  only displaying first host header 
+            if host.hostAddress == pathApart[len(pathApart) - 2] or  __name__ == "__main__":
+                resultsFILE.write("\n==============================================\n")
                 resultsFILE.write("Host: " + host.hostAddress + "\n")
                 resultsFILE.write("MAC Address: " + host.hostMAC + "\n")
                 resultsFILE.write("Vendor: " + host.hostVendor + "\n")
                 resultsFILE.write("OS Matches: ")
                 for OSmatch in host.OSmatches:
                     resultsFILE.write(OSmatch + "  ")
+                resultsFILE.write("\n==============================================\n")
+                
+                if __name__ == "__main__":
+                    pathApart[len(pathApart) - 2] = host.hostAddress  #a little hacky, but it works OK.  need to replace with local var
 
                 for r in results:
-                    if r[SEARCHKEY].find(pathApart[len(pathApart) -2]) != -1 or __name__ == "__main__":
+                    if r[SEARCHKEY].find(pathApart[len(pathApart) -2]) != -1:
                         resultsFILE.write("\n\n" + r[SEARCHKEY] + " | QUERY: "  + r[SEARCHQUERY] + "\n")
                         resultsFILE.write("-----------------------------------------------------------\n")
                         resultsFILE.write("FILE: " + r[FILE] + "\n")
